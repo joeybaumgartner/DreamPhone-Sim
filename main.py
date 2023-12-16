@@ -18,7 +18,6 @@ class Player:  #class Player constructor
     def __init__(self, playernumber):
         self.playernumber = playernumber    #Class Player gets a "playernumber" attribute
         self.cardsinhand = []               #Class Player gets a "cardsinhand" attribute
-        self.current_turn = False           #gives a boolean flag for if the player is currently playing or not
         self.playername = ""                #gives players a name attribute in the class
         self.collected_clues = []           #where the information goes that the player collects
         self.dialed_this_turn = False       #a flag for limiting 1 dial per turn
@@ -28,7 +27,6 @@ class Player:  #class Player constructor
 
     # Reset all turn-based flags
     def end_turn(self):
-        self.current_turn = False
         self.dialed_this_turn = False
         self.guessed_this_turn = False
         self.pvp_this_turn = False
@@ -159,8 +157,8 @@ def boy_attribute_table():   #this is an automated notepad of the clues you have
         clothing = i.clothing
         name = i.name
         listname = i.name
-        if i in whos_turn().collected_clues: name = red_out(i.name) #reds out a name you have dialed already in the "dialed" list
-        for x in whos_turn().collected_clues: #iterates over all the clues the player has heard so far
+        if i in current_player.collected_clues: name = red_out(i.name) #reds out a name you have dialed already in the "dialed" list
+        for x in current_player.collected_clues: #iterates over all the clues the player has heard so far
             if x.clue_to_reveal == i.sport: sport = red_out(i.sport)
             if x.clue_to_reveal == i.hangout: hangout = red_out(i.hangout)
             if x.clue_to_reveal == i.food: food = red_out(i.food)
@@ -212,11 +210,8 @@ def starting_deal():
 def check_decks():
     if len(game_deck) == 0: reshuffle()
 
-def whos_turn():
-    for i in player_list:
-        if i.current_turn:
-            curr_player = i
-            return curr_player
+def whos_turn(player):
+    print(f"\n{Back.LIGHTBLACK_EX + Fore.BLUE}It is {player.playername}'s turn (Player {player.playernumber}).{Style.RESET_ALL}\n")
 
 def print_whos_turn():
     for i in player_list:
@@ -252,10 +247,6 @@ def name_players():
 
 def starting_player():
     if len(player_list) == 1:  #checks for one player mode
-        #for i in player_list:
-        #    i.current_turn = True
-        #    break
-        player_list[0].current_turn = True
         return player_list[0]
     
     while True:
@@ -269,7 +260,6 @@ def starting_player():
             if choice.isdigit():
                 for i in player_list:
                     if int(choice) == i.playernumber:
-                        i.current_turn = True
                         print(f"Player {i.playernumber} will go first.")
                         short_delay()
                         return i
@@ -278,7 +268,7 @@ def starting_player():
 
 # Not currently called by anything
 def print_current_curses():
-    for i in whos_turn().cardsinhand:
+    for i in current_player.cardsinhand:
         if len(i.curse_bucket) > 0:
             for c in i.curse_bucket:
                 print(f"Your {i.name} card is cursed, curse applied by {c.player_owner.playername} with '{c.long_name}'")
@@ -325,7 +315,7 @@ def speakerphone(last_dialed_boy):
 
 def use_pvp():   #this one is crazy
     opponent_list = copy.copy(player_list)
-    opponent_list.remove(whos_turn())   #we need a list of players that doesn't include current player
+    opponent_list.remove(current_player)   #we need a list of players that doesn't include current player
     op_player_nums = []
     for i in opponent_list: op_player_nums.append(int(i.playernumber))  # making a bucket of all valid opponent player numbers
     op_player_names = []
@@ -337,18 +327,18 @@ def use_pvp():   #this one is crazy
         print("You cannot use PvP Cards in a 1 player game.")
         return
 
-    if whos_turn().pvp_this_turn: #halt if you have used a pvp card already this turn
+    if current_player.pvp_this_turn: #halt if you have used a pvp card already this turn
         print("Cannot use more than one PvP card per turn.")
         return
     else:
-        if len(whos_turn().pvp_in_hand) != 0:  #checks that hand is not empty
+        if len(current_player.pvp_in_hand) != 0:  #checks that hand is not empty
             print("Please select a PvP card to use (number input), or ('exit') to leave.")
         else:
             print("You have no PvP Cards to use.")
             return
 
     ###chosing a pvp card###
-    for i in whos_turn().pvp_in_hand: print(f"{whos_turn().pvp_in_hand.index(i)} - |{i.long_name}|")   #prints out all the available pvp cards in hand
+    for i in current_player.pvp_in_hand: print(f"{current_player.pvp_in_hand.index(i)} - |{i.long_name}|")   #prints out all the available pvp cards in hand
 
     valid_choice = False
     while valid_choice == False:  #loop that only breaks when valid choice in made
@@ -357,11 +347,11 @@ def use_pvp():   #this one is crazy
             print("\nExiting PvP.")
             return
         if choice.isdigit():   #filters for num input
-            if int(choice) not in range(int(len(whos_turn().pvp_in_hand))):  #if it's a num but not a possible correct one
+            if int(choice) not in range(int(len(current_player.pvp_in_hand))):  #if it's a num but not a possible correct one
                 print("Entered number not in range of valid choices, try again.")   #print error
-            for i in whos_turn().pvp_in_hand:   #iterate over your pvp hand
-                if int(choice) == int(whos_turn().pvp_in_hand.index(i)):   #checks input against pvp cards
-                    selected_pvp = whos_turn().pvp_in_hand[int(choice)]   #sets choice as var selected_pvp
+            for i in current_player.pvp_in_hand:   #iterate over your pvp hand
+                if int(choice) == int(current_player.pvp_in_hand.index(i)):   #checks input against pvp cards
+                    selected_pvp = current_player.pvp_in_hand[int(choice)]   #sets choice as var selected_pvp
                     print(f"\nYou chose |{selected_pvp.long_name}|\n")
                     valid_choice = True
                     break
@@ -441,19 +431,19 @@ def use_pvp():   #this one is crazy
             print("Sorry, this card is already cursed. Try again on another selection.")
             return
 
-    whos_turn().pvp_this_turn = True   #makes it so players can only use once per turn, resets on end sequence
+    current_player.pvp_this_turn = True   #makes it so players can only use once per turn, resets on end sequence
     print(f"\nYou have cursed {opponent_player.playername}'s '{selected_card.name}' Boy card with {selected_pvp.long_name}.")
     long_delay()
     selected_pvp.used_on.append(opponent_player)  # copying opponent player to pvp card attribute bucket "used on"...might not be helpful
     selected_card.curse_bucket.append(selected_pvp) #adds selected PVP to the opponent's card curse bucket
-    whos_turn().pvp_in_hand.remove(selected_pvp) #removes pvp card from current hand
+    current_player.pvp_in_hand.remove(selected_pvp) #removes pvp card from current hand
     print("The spent PvP card has been removed from your hand.")
     long_delay()
 
 def call_number(choice):
-    if whos_turn().dialed_this_turn == False:
+    if current_player.dialed_this_turn == False:
         valid_call = False   #initalizes valid call var
-        for i in whos_turn().cardsinhand:   #this checks if dial "boyname" or dial "phonenum" was entered
+        for i in current_player.cardsinhand:   #this checks if dial "boyname" or dial "phonenum" was entered
             if "dial" in choice and str(i.phonenum) in choice or "dial" in choice and str(i.name).lower() in choice:
                 last_dialed_boy = i
                 for x in range(0, 3):
@@ -468,7 +458,7 @@ def call_number(choice):
             if dialed_number == "leave":
                 break
 
-            for i in whos_turn().cardsinhand:
+            for i in current_player.cardsinhand:
                 if dialed_number == i.phonenum or dialed_number.lower() == i.name.lower():   #added name dial for Clarissa <3
                     for x in range(0,3):
                         print("*ring*")
@@ -560,15 +550,15 @@ def clue_reveal(last_dialed_boy):
         case 'clothing_reveal':
             print(red_out(f"but he doesn't wear {grammar} {last_dialed_boy.clue_to_reveal.lower()}."), "\n")
 
-    whos_turn().collected_clues.append(last_dialed_boy)   #add clue to notepad
+    current_player.collected_clues.append(last_dialed_boy)   #add clue to notepad
 
     if curse_mod == "secret":
         also_give_clue = last_dialed_boy.curse_bucket[0].player_owner
         also_give_clue.collected_clues.append(last_dialed_boy) #player who used curse card gets clue
-        whos_turn().pvp_in_hand.append(last_dialed_boy.curse_bucket[0])   #copy pvp card to whosturn
+        current_player.pvp_in_hand.append(last_dialed_boy.curse_bucket[0])   #copy pvp card to whosturn
         last_dialed_boy.curse_bucket.remove(last_dialed_boy.curse_bucket[0])  #remove curse card from boy card
-        for i in whos_turn().pvp_in_hand:
-            i.player_owner = whos_turn()   #brute force changes the owner flag of the pvp cards in who's turn hand
+        for i in current_player.pvp_in_hand:
+            i.player_owner = current_player   #brute force changes the owner flag of the pvp cards in who's turn hand
 
     if curse_mod == "speaker":
         for i in player_list:
@@ -583,37 +573,39 @@ def clue_reveal(last_dialed_boy):
     return choice
 
 def dialed_discard(last_dialed_boy):
-    if whos_turn().dialed_this_turn == False:
-        i = whos_turn().cardsinhand.index(last_dialed_boy)
+    if current_player.dialed_this_turn == False:
+        i = current_player.cardsinhand.index(last_dialed_boy)
         print(f"{last_dialed_boy.name} from your hand has been discarded.")
-        discard_pile.append(whos_turn().cardsinhand.pop(i))  # adds card to discard pile based on in_hand index num
-        if len(player_list) > 1: whos_turn().dialed_this_turn = True
+        discard_pile.append(current_player.cardsinhand.pop(i))  # adds card to discard pile based on in_hand index num
+        if len(player_list) > 1: current_player.dialed_this_turn = True
 
 def dialed_draw():
-    if len(whos_turn().cardsinhand) < 3:
-        whos_turn().cardsinhand.append(game_deck.pop(0))
-        print(whos_turn().playername, "drew a card.")
+    if len(current_player.cardsinhand) < 3:
+        current_player.cardsinhand.append(game_deck.pop(0))
+        print(current_player.playername, "drew a card.")
         choice = "null"
         return choice
 
 def end_turn(number_of_players):
-    former_player = whos_turn()  #once whos_turn().current_turn is false, it breaks function call, need to get the iteration
-                                # of the player cuurrently to make dialed this turn and guess this turn work
+    global current_player
+    print(f"Ending {current_player.playername}'s turn.")
+
+    former_player = current_player  # Assign the current player as the fomer player
     if number_of_players > 1:
         for i in range(len(player_list)):   #iterates over all index numbers in player list var
-            if player_list[i] == whos_turn():   #if i is the index number of the item matching current player:
+            if player_list[i] == current_player:   #if i is the index number of the item matching current player:
                 current_player_num = i  #sets var current_player_num to correct index number
 
         next_player_num = (current_player_num + 1) % len(player_list)
-        print("Ending", whos_turn().playername, "'s turn.")
+        current_player = player_list[next_player_num]
+    
         delay()
         
         # End last player's turn
         former_player.end_turn()
         
-        print("next player up:", player_list[next_player_num].playername)
+        print("next player up:", current_player.playername)
         delay()
-        player_list[next_player_num].current_turn = True    #turns on next player turn flag
 
         for i in card_list:     #Reset redial flag when players swap
             i.first_call = True
@@ -624,14 +616,14 @@ def count():
     short_delay()
     print(f"Draw Pile: {len(game_deck)}")
     short_delay()
-    print(f"{whos_turn().playername}'s Hand: {len(whos_turn().cardsinhand)}")
+    print(f"{current_player.playername}'s Hand: {len(current_player.cardsinhand)}")
     short_delay()
     print(f"Discard Pile: {len(discard_pile)}")
     short_delay()
 
 def solve(crush, number_of_players):
 
-    if whos_turn().guessed_this_turn:
+    if current_player.guessed_this_turn:
         print("You cannot guess more than once per turn.")
         return False
     print("You think you know who your crush is, huh?\nType your guess to check (name or phone#).\nYou can also look at your notebook by entering ('notebook').")
@@ -654,17 +646,17 @@ def solve(crush, number_of_players):
             case "crush":
                 long_delay()
                 print(f"{crush_object.name} is your crush!\n")
-                print(f"Congratulations! {whos_turn().playername} (Player {whos_turn().playernumber}) has won the game.")
+                print(f"Congratulations! {current_player.playername} (Player {current_player.playernumber}) has won the game.")
                 long_delay()
                 print("Game Over!")
                 print("Thank you for playing! I hope you had fun. \n                                  - Old Kid")
                 long_delay()
                 long_delay()
-                if number_of_players > 1: whos_turn().guessed_this_turn = True
+                if number_of_players > 1: current_player.guessed_this_turn = True
                 return True
             case "valid":
                 print("Wrong boy, try again!")
-                if number_of_players > 1: whos_turn().guessed_this_turn = True
+                if number_of_players > 1: current_player.guessed_this_turn = True
                 return False
 
 def shuffle():  # shuffles the game deck
@@ -684,6 +676,8 @@ def reshuffle():
 # now on to the main loop. it simply checks for inputs to run the outlined functions. nothing too crazy
 
 def game_loop():
+    global current_player
+
     clear_screen()
     crush = new_game_crush()
     valid_choices=["null", "notepad", "dial", "end", "count", "redial", "solve", "pvp"] # commands that work at start
@@ -700,7 +694,7 @@ def game_loop():
     game_ended = False
 
     while not game_ended:
-        print_whos_turn()
+        whos_turn(current_player)
         current_player.print_hand()
         check_decks()
         print (white_out("Commands: ('dial') - ('notepad') - ('pvp') - ('solve') - ('redial') - ('end')"),"\n")
