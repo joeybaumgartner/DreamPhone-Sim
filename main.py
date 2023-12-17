@@ -50,13 +50,13 @@ def long_delay():
     time.sleep(2)
 
 #Some TEXT STYLE stuff
-def blue_out(text): #red_out is how i am crossing out entries in the notepad
+def blue_out(text) -> str: #red_out is how i am crossing out entries in the notepad
     return Back.LIGHTBLACK_EX + Fore.BLUE + text + Style.RESET_ALL
 
-def red_out(text): #red_out is how i am crossing out entries in the notepad
+def red_out(text) -> str: #red_out is how i am crossing out entries in the notepad
     return Back.RED + Fore.WHITE + text + Style.RESET_ALL
 
-def white_out(text): #red_out is how i am crossing out entries in the notepad
+def white_out(text) -> str: #red_out is how i am crossing out entries in the notepad
     return Back.WHITE + Fore.BLACK + text + Style.RESET_ALL
 
 def boy_attribute_table():   #this is an automated notepad of the clues you have crossed off the list. player specific
@@ -83,7 +83,7 @@ def boy_attribute_table():   #this is an automated notepad of the clues you have
     input("Press Enter to continue...")
     clear_screen()
 
-def new_game_crush():
+def new_game_crush() -> int:
     clue_list = []  # makes bucket to hold all valid clues in
     crush = random.randint(0, int(len(card_list)-1)) #rng a boy from the card list to be the crush, adjusting len from starting at 1 while list index starts at 0
     for i in range (len(card_list)):   #creates a list of all possible clues in clue_list, removing "null" entries for foodsport wierdness
@@ -125,7 +125,7 @@ def check_decks():
 def whos_turn(player):
     print(f"\n{Back.LIGHTBLACK_EX + Fore.BLUE}It is {player.playername}'s turn (Player {player.playernumber}).{Style.RESET_ALL}\n")
 
-def set_number_of_players():
+def set_number_of_players() -> int:
     print("How many players would like to play (1 - 4)?")
     while True:
         try:
@@ -150,7 +150,7 @@ def name_players():
         print(f"Player {i.playernumber}, {i.playername}")
         short_delay()
 
-def starting_player():
+def starting_player() -> Player:
     if len(player_list) == 1:  #checks for one player mode
         return player_list[0]
     
@@ -169,7 +169,7 @@ def starting_player():
         else: 
             print("Not a valid choice.")
 
-def check_for_curse(last_dialed_boy):
+def check_for_curse(last_dialed_boy) -> PvpCardType:
     if len(last_dialed_boy.curse_bucket) > 0:
         print(f"\nOh no! {last_dialed_boy.curse_bucket[0].player_owner.playername} "
           f"(Player {last_dialed_boy.curse_bucket[0].player_owner.playernumber}) has cursed your {last_dialed_boy.name} card with {last_dialed_boy.curse_bucket[0].type}!\n")
@@ -317,7 +317,7 @@ def use_pvp():   #this one is crazy
     print("The spent PvP card has been removed from your hand.")
     long_delay()
 
-def call_number(choice):
+def call_number(choice) -> Card:
     if current_player.dialed_this_turn == False:
         valid_call = False   #initalizes valid call var
         for i in current_player.cardsinhand:   #this checks if dial "boyname" or dial "phonenum" was entered
@@ -401,11 +401,7 @@ def clue_reveal(last_dialed_boy):
     long_delay()
 
     #quiet response, only player hears
-
-    clue_text = response.negative_clue_text(last_dialed_boy.clue_to_reveal)
-    if (last_dialed_boy.clue_to_reveal == "Hat" or "Jacket" or "Tie") and (response == ClueType.CLOTHING): 
-        clue_text = f"a {clue_text}"
-    print(red_out(clue_text), "\n")
+    print(red_out(response.negative_clue_text(last_dialed_boy.clue_to_reveal)), "\n")
 
     current_player.collected_clues.append(last_dialed_boy)   #add clue to notepad
 
@@ -425,9 +421,7 @@ def clue_reveal(last_dialed_boy):
         #pvp card changes hand and owner assignment
     last_dialed_boy.first_call = False  #this is where redial snark is set
 
-    choice = "null"
     long_delay()
-    return choice
 
 def dialed_discard(last_dialed_boy):
     if current_player.dialed_this_turn == False:
@@ -440,8 +434,6 @@ def dialed_draw():
     if len(current_player.cardsinhand) < 3:
         current_player.cardsinhand.append(game_deck.pop(0))
         print(current_player.playername, "drew a card.")
-        choice = "null"
-        return choice
 
 def end_turn(number_of_players):
     global current_player

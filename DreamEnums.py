@@ -13,15 +13,6 @@ class PvpCardType(Enum):
                 return "Share a Secret"
             case PvpCardType.SPEAKERPHONE:
                 return "Speakerphone"
-            
-    def description(self):
-        match self:
-            case PvpCardType.HANG_UP:
-                return "Mom Says Hang up!"
-            case PvpCardType.SHARE_SECRET:
-                return "Share a Secret"
-            case PvpCardType.SPEAKERPHONE:
-                return "Speakerphone"
 
 class ClueType(Enum):
     HANGOUT = 1
@@ -43,7 +34,7 @@ class ClueType(Enum):
             case ClueType.NO_REVEAL:
                 return ""
             
-    def clue_text(self):
+    def clue_text(self) -> str:
         match self:
             case ClueType.HANGOUT:
                 return "I know where he hangs out, "
@@ -54,7 +45,7 @@ class ClueType(Enum):
             case ClueType.CLOTHING:
                 return "He looks good in whatever he wears"
             
-    def negative_clue_text(self, clue):
+    def negative_clue_text(self, clue) -> str:
             match self:
                 case ClueType.HANGOUT:
                     return f"but he doesn't hang out at {clue}."
@@ -63,4 +54,7 @@ class ClueType(Enum):
                 case ClueType.FOOD:
                     return f"but he hates the taste of {clue}."
                 case ClueType.CLOTHING:
-                    return f"but he doesn't wear {clue}."
+                    if(clue in ["Hat", "Jacket", "Tie"]):
+                        return f"but he doesn't wear a {clue}"
+                    else:
+                        return f"but he doesn't wear {clue}."
