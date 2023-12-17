@@ -3,6 +3,10 @@ import copy
 import time
 import json
 from types import SimpleNamespace
+from DreamEnums import ClueType, PvpCardType
+from Player import Player
+from Card import Card
+from PvpCard import PvpCard
 
 from prettytable import PrettyTable    #this helps build BOY ATTRIBUTE TABLE
 import colorama #fixes windows shell color bugs
@@ -12,19 +16,8 @@ from colorama import Fore, Back, Style #gives us come color options
 import click # Import click library for good screen clearing function
 colorama.init() #turns on windows shell fix
 
-from DreamEnums import PvpCardType
-from Player import Player
-from Card import Card
-
-player1 = Player(1)
-player2 = Player(2)
-player3 = Player(3)
-player4 = Player(4)
-
-# Assign current player to player1 by default (can be changed later)
-current_player = player1
-
-all_player_list = [player1, player2, player3, player4]  #all possible players in the game
+all_player_list = [Player(1), Player(2), Player(3), Player(4)]  #all possible players in the game
+current_player = all_player_list[0]     # Assign current player to player1 by default (can be changed later)
 player_list = []  #a list built out by the player's choice of player num
 crush = 0  #initalizes game crush global var
 
@@ -36,31 +29,6 @@ with open("./cards.json") as f:
 ##global stuff
 # this is the master list of cards in the deck. a way to reference a var list containing all card object names.
 # tried to find a less brute force way to do this but so far no luck.
-
-class PvpCard:  #builds Pvp_Cards class
-    def __init__(self, type, player_owner, long_name):
-        self.type = type    #Mom says hang up. share a secret, speakerphone.
-        self.player_owner = player_owner  #who played the card
-        self.used_on = [] #what Card the Pvp_Card was used on
-        self.long_name = long_name #a way to not have to type shit every time)
-
-    #def __init__(self, value):
-    #    self.type = PvpCardType(value)
-
-pvp0 = PvpCard("hangup", player1, "Mom Says Hang up!")
-pvp1 = PvpCard("hangup", player2, "Mom Says Hang up!")
-pvp2 = PvpCard("hangup", player3, "Mom Says Hang up!")
-pvp3 = PvpCard("hangup", player4, "Mom Says Hang up!")
-pvp4 = PvpCard("share_secret", player1, "Share a Secret")
-pvp5 = PvpCard("share_secret", player2, "Share a Secret")
-pvp6 = PvpCard("share_secret", player3, "Share a Secret")
-pvp7 = PvpCard("share_secret", player4, "Share a Secret")
-pvp8 = PvpCard("speakerphone", player1, "Speakerphone")
-pvp9 = PvpCard("speakerphone", player2, "Speakerphone")
-pvp10 = PvpCard("speakerphone", player3, "Speakerphone")
-pvp11 = PvpCard("speakerphone", player4, "Speakerphone")
-
-pvp_list = [pvp0,pvp1,pvp2,pvp3,pvp4,pvp5,pvp6,pvp7,pvp8,pvp9,pvp10,pvp11]
 
 game_deck = copy.copy(card_list)  # this clones from the master list for the "in game" deck. Use game_deck when moving stuff around, use card_list as universal master ref)
 in_hand = []  # initializes player hand as empty
@@ -136,14 +104,15 @@ def starting_deal():
         for f in player_list:
             f.cardsinhand.append(game_deck.pop(0))
 
+    # Assign PVP cards; none in 1-player mode, one of each type in > 1 player mode
     if len(player_list) == 1: 
         print("Single Player Mode. PvP Cards Disabled.\nYou have drawn 3 cards from the deck.")
     else:
-        for p in pvp_list:  #gives players pvp cards
-            if p.player_owner == player1: player1.pvp_in_hand.append(p)
-            if p.player_owner == player2: player2.pvp_in_hand.append(p)
-            if p.player_owner == player3: player3.pvp_in_hand.append(p)
-            if p.player_owner == player4: player4.pvp_in_hand.append(p)
+        for player in all_player_list:
+                player.pvp_in_hand.append(PvpCard(PvpCardType.HANG_UP, player))
+                player.pvp_in_hand.append(PvpCard(PvpCardType.SHARE_SECRET, player))
+                player.pvp_in_hand.append(PvpCard(PvpCardType.SPEAKERPHONE, player))
+
         print("All Players have drawn 3 boy cards from the deck,\nand have 3 PvP cards in hand.")
         print("Starting Game...")
         delay()
@@ -155,13 +124,6 @@ def check_decks():
 
 def whos_turn(player):
     print(f"\n{Back.LIGHTBLACK_EX + Fore.BLUE}It is {player.playername}'s turn (Player {player.playernumber}).{Style.RESET_ALL}\n")
-
-def print_whos_turn():
-    for i in player_list:
-        if i.current_turn:
-            curr_player = i
-            print(f"\n{Back.LIGHTBLACK_EX + Fore.BLUE}It is {curr_player.playername}'s turn (Player {curr_player.playernumber}).{Style.RESET_ALL}\n")
-            return curr_player
 
 def set_number_of_players():
     print("How many players would like to play (1 - 4)?")
@@ -194,77 +156,40 @@ def starting_player():
     
     while True:
         print(f"\nPlease choose the starting player by entering their player number.")
-        choice = input()
-        if choice:
-            if choice.lower() == "one": choice = 1
-            if choice.lower() == "two": choice = 2
-            if choice.lower() == "three": choice = 3
-            if choice.lower() == "four": choice = 4
-            if choice.isdigit():
-                for i in player_list:
-                    if int(choice) == i.playernumber:
-                        print(f"Player {i.playernumber} will go first.")
-                        short_delay()
-                        return i
-                break
-        else: print("Not a valid choice.")
+        options = ["one", "two", "three", "four"]
 
-# Not currently called by anything
-def print_current_curses():
-    for i in current_player.cardsinhand:
-        if len(i.curse_bucket) > 0:
-            for c in i.curse_bucket:
-                print(f"Your {i.name} card is cursed, curse applied by {c.player_owner.playername} with '{c.long_name}'")
+        choice = input()
+        if choice.lower() in options:
+            choice = options.index(choice) - 1
+        elif choice.isdigit():
+                choice = int(choice)
+                print(f"Player {choice} will go first.")
+                short_delay()
+                return player_list[choice - 1]      # Arrays are 0-based, so subtract one from choice
+        else: 
+            print("Not a valid choice.")
 
 def check_for_curse(last_dialed_boy):
     if len(last_dialed_boy.curse_bucket) > 0:
+        print(f"\nOh no! {last_dialed_boy.curse_bucket[0].player_owner.playername} "
+          f"(Player {last_dialed_boy.curse_bucket[0].player_owner.playernumber}) has cursed your {last_dialed_boy.name} card with {last_dialed_boy.curse_bucket[0].type}!\n")
+        long_delay()
+
         for i in last_dialed_boy.curse_bucket:
             match i.type:
-                case "hangup":
-                    return mom_says_hang_up(last_dialed_boy) # end current turn and remove card, add message to players turn
-                case "share_secret":
-                    return share_a_secret(last_dialed_boy) # continue to clue reveal but apply clue to both players, add message to player who applied curse, card goes into hand of cursed player
-                case "speakerphone":
-                    return speakerphone(last_dialed_boy) # reveal to all, add message to other players, burn card
-                case other:
-                    return "no_curse"
-                
-def share_a_secret(last_dialed_boy):
-    print(f"\nOh no! {last_dialed_boy.curse_bucket[0].player_owner.playername} "
-          f" (Player {last_dialed_boy.curse_bucket[0].player_owner.playernumber}) has cursed your {last_dialed_boy.name} card with |Share a Secret|!\n")
-    long_delay()
-    print(Back.RED + Fore.WHITE,"Your revealed clue from",last_dialed_boy.name,\
-    "will also be added to their notepad. However, you will gain possession of their expended |Share a Secret| PvP card.", Style.RESET_ALL, "\n")
-    long_delay()
-    long_delay()
-    return "secret"
+                case PvpCardType.HANG_UP:
+                    print(Back.RED + Fore.WHITE, f"You must discard your {last_dialed_boy.name} and lose a turn.",Style.RESET_ALL,"\n")
+                case PvpCardType.SHARE_SECRET:
+                    print(Back.RED + Fore.WHITE, f"Your revealed clue from {last_dialed_boy.name,} will also be added to their notepad. However, you will gain possession of their expended {i.type} PvP card.", Style.RESET_ALL, "\n")
+                case PvpCardType.SPEAKERPHONE:
+                    print(Back.RED + Fore.WHITE, f"Your revealed clue from {last_dialed_boy.name} will also be added to every player's notepad.",Style.RESET_ALL,"\n")
 
-def mom_says_hang_up(last_dialed_boy):
-    print(f"\nOh no! {last_dialed_boy.curse_bucket[0].player_owner.playername} "
-          f" (Player {last_dialed_boy.curse_bucket[0].player_owner.playernumber}) has cursed your {last_dialed_boy.name} card with |Mom Says Hang Up|!\n")
-    long_delay()
-    print(Back.RED + Fore.WHITE,"You must discard your",last_dialed_boy.name,"and lose a turn.",Style.RESET_ALL,"\n")
-    long_delay()
-    long_delay()
-    return "hangup"
+            long_delay()
+            long_delay()
 
-def speakerphone(last_dialed_boy):
-    print(f"Oh no! {last_dialed_boy.curse_bucket[0].player_owner.playername} "
-          f"(Player {last_dialed_boy.curse_bucket[0].player_owner.playernumber}) has cursed your {last_dialed_boy.name} card with |Speakerphone|!")
-    print(Back.RED + Fore.WHITE,"Your revealed clue from",last_dialed_boy.name,"will also be added to every player's notepad.",Style.RESET_ALL,"\n")
-    long_delay()
-    long_delay()
-    return "speaker"
+            return i.type
 
 def use_pvp():   #this one is crazy
-    opponent_list = copy.copy(player_list)
-    opponent_list.remove(current_player)   #we need a list of players that doesn't include current player
-    op_player_nums = []
-    for i in opponent_list: op_player_nums.append(int(i.playernumber))  # making a bucket of all valid opponent player numbers
-    op_player_names = []
-    for i in opponent_list: op_player_names.append(i.playername)  # making a bucket of all valid opp player names
-    op_player_names = [element.lower() for element in op_player_names]
-
     ###checks that the player can use PVP###
     if len(player_list) == 1: # halt unless at least a 2 player game
         print("You cannot use PvP Cards in a 1 player game.")
@@ -280,8 +205,16 @@ def use_pvp():   #this one is crazy
             print("You have no PvP Cards to use.")
             return
 
+    opponent_list = copy.copy(player_list)
+    opponent_list.remove(current_player)   #we need a list of players that doesn't include current player
+    op_player_nums = []
+    for i in opponent_list: op_player_nums.append(int(i.playernumber))  # making a bucket of all valid opponent player numbers
+    op_player_names = []
+    for i in opponent_list: op_player_names.append(i.playername)  # making a bucket of all valid opp player names
+    op_player_names = [element.lower() for element in op_player_names]
+
     ###chosing a pvp card###
-    for i in current_player.pvp_in_hand: print(f"{current_player.pvp_in_hand.index(i)} - |{i.long_name}|")   #prints out all the available pvp cards in hand
+    current_player.print_pvp_cards()
 
     valid_choice = False
     while valid_choice == False:  #loop that only breaks when valid choice in made
@@ -295,14 +228,15 @@ def use_pvp():   #this one is crazy
             for i in current_player.pvp_in_hand:   #iterate over your pvp hand
                 if int(choice) == int(current_player.pvp_in_hand.index(i)):   #checks input against pvp cards
                     selected_pvp = current_player.pvp_in_hand[int(choice)]   #sets choice as var selected_pvp
-                    print(f"\nYou chose |{selected_pvp.long_name}|\n")
+                    print(f"\nYou chose |{selected_pvp.type}|\n")
                     valid_choice = True
                     break
         else: print("Please enter selection as a number. Try again.")
 
     ###chosing a player to use card on###
-    print(f"Choose a player to curse with {selected_pvp.long_name}. Type name or number, or ('exit') to leave.")
-    for i in opponent_list: print(i.playernumber,"-",i.playername)  #prints opponents
+    print(f"Choose a player to curse with {selected_pvp.type}. Type name or number, or ('exit') to leave.")
+    for i in opponent_list: 
+        print(i.playernumber," - ",i.playername)  #prints opponents
 
     valid_choice = False  #setting up a big loop defined of two little loops, number check and name check
     while valid_choice == False:  #do this until good name or num return
@@ -375,7 +309,7 @@ def use_pvp():   #this one is crazy
             return
 
     current_player.pvp_this_turn = True   #makes it so players can only use once per turn, resets on end sequence
-    print(f"\nYou have cursed {opponent_player.playername}'s '{selected_card.name}' Boy card with {selected_pvp.long_name}.")
+    print(f"\nYou have cursed {opponent_player.playername}'s '{selected_card.name}' Boy card with {selected_pvp.type}.")
     long_delay()
     selected_pvp.used_on.append(opponent_player)  # copying opponent player to pvp card attribute bucket "used on"...might not be helpful
     selected_card.curse_bucket.append(selected_pvp) #adds selected PVP to the opponent's card curse bucket
@@ -428,7 +362,7 @@ def clue_reveal(last_dialed_boy):
     or last_dialed_boy.clue_to_reveal == card_list[crush].sport\
     or last_dialed_boy.clue_to_reveal == card_list[crush].food\
     or last_dialed_boy.clue_to_reveal == card_list[crush].clothing: #if the clue would reveal the crush's hangout, food etc
-        response = "no_reveal"                                    #we do not give that information to the player
+        response = ClueType.NO_REVEAL                                    #we do not give that information to the player
 
     #type of reveal check:
     no_crush_list = copy.copy(card_list)   #we need to look through all clues except for the crush's 'positive' clues
@@ -437,23 +371,22 @@ def clue_reveal(last_dialed_boy):
     for i in no_crush_list:   #iterate through the whole no crush list, checking against what kind of clue it is
         match last_dialed_boy.clue_to_reveal:       #and set the type of response
             case i.hangout:
-                response = "hangout_reveal"
+                response = ClueType.HANGOUT
             case i.sport:
-                response = "sport_reveal"
+                response = ClueType.SPORT
             case i.food:
-                response = "food_reveal"
+                response = ClueType.FOOD
             case i.clothing:
-                response = "clothing_reveal"
+                response = ClueType.CLOTHING
 
 #### player vs player effects when dialed ####
 
     curse_mod = check_for_curse(last_dialed_boy)
 
-    #if curse_mod == "speaker":
-    if curse_mod == "hangup":
+    if curse_mod == PvpCardType.HANG_UP:
         last_dialed_boy.curse_bucket.remove(last_dialed_boy.curse_bucket[0])   #deletes the curse from the game
         dialed_discard(last_dialed_boy)   #runs the discard script and skips clue reveal
-        return #nreaks out of current routine
+        return #breaks out of current routine
 
     if last_dialed_boy.first_call:   #checks if this is your first time calling them
         print(blue_out(f"Hello? This is {last_dialed_boy.name}. You want to know about your crush?"))
@@ -463,47 +396,28 @@ def clue_reveal(last_dialed_boy):
         long_delay()
 
     #loud repsonses, everyone hears
-    clue_type_text = ""
-    match response:
-        case 'hangout_reveal':
-            clue_type_text = "I know where he hangs out, "
-        case 'sport_reveal':
-            clue_type_text = "I know where he hangs out, "
-        case 'food_reveal':
-            clue_type_text = "He eats a lot of food, "
-        case 'clothing_reveal':
-            clue_type_text = "He looks good in whatever he wears, "
-    
-    print(blue_out(clue_type_text))
+    print(blue_out(response.clue_text()))
 
     long_delay()
 
     #quiet response, only player hears
-    grammar = ""
-    if last_dialed_boy.clue_to_reveal == "Hat" or "Jacket" or "Tie": grammar = "a"
-    else: grammar = ""
 
-    match response:
-        case 'hangout_reveal':
-            print(red_out(f"but he doesn't hang out at {last_dialed_boy.clue_to_reveal}."), "\n")
-        case 'sport_reveal':
-            print(red_out(f"but he doesn't like {last_dialed_boy.clue_to_reveal.lower()}."), "\n")
-        case 'food_reveal':
-            print(red_out(f"but he hates the taste of {last_dialed_boy.clue_to_reveal.lower()}."), "\n")
-        case 'clothing_reveal':
-            print(red_out(f"but he doesn't wear {grammar} {last_dialed_boy.clue_to_reveal.lower()}."), "\n")
+    clue_text = response.negative_clue_text(last_dialed_boy.clue_to_reveal)
+    if (last_dialed_boy.clue_to_reveal == "Hat" or "Jacket" or "Tie") and (response == ClueType.CLOTHING): 
+        clue_text = f"a {clue_text}"
+    print(red_out(clue_text), "\n")
 
     current_player.collected_clues.append(last_dialed_boy)   #add clue to notepad
 
-    if curse_mod == "secret":
+    if curse_mod == PvpCardType.SHARE_SECRET:
         also_give_clue = last_dialed_boy.curse_bucket[0].player_owner
         also_give_clue.collected_clues.append(last_dialed_boy) #player who used curse card gets clue
         current_player.pvp_in_hand.append(last_dialed_boy.curse_bucket[0])   #copy pvp card to whosturn
         last_dialed_boy.curse_bucket.remove(last_dialed_boy.curse_bucket[0])  #remove curse card from boy card
         for i in current_player.pvp_in_hand:
             i.player_owner = current_player   #brute force changes the owner flag of the pvp cards in who's turn hand
-
-    if curse_mod == "speaker":
+    
+    elif curse_mod == PvpCardType.SPEAKERPHONE:
         for i in player_list:
             i.collected_clues.append(last_dialed_boy)   #give clue to all players in the game
         last_dialed_boy.curse_bucket.remove(last_dialed_boy.curse_bucket[0])   #delete the speakerphone card from the game
@@ -623,7 +537,7 @@ def game_loop():
 
     clear_screen()
     crush = new_game_crush()
-    valid_choices=["null", "notepad", "dial", "end", "count", "redial", "solve", "pvp"] # commands that work at start
+    valid_choices = ["null", "notepad", "dial", "end", "count", "redial", "solve", "pvp"] # commands that work at start
     print("\nWelcome to Dream Phone Simulator Version 0.1, a computer simulation of the 1991 board game 'Dreamphone'. \
           \nPlease see included dp_instructions.txt for more information.\n")
     delay()

@@ -23,5 +23,9 @@ class Player:  #class Player constructor
 
         print("PvP", end = " ")
         for i in self.pvp_in_hand:
-            print(f"|{i.long_name}|", end = " ")
+            print(f"|{i.type}|", end = " ")
         print(end = "\n")
+
+    def print_pvp_cards(self):
+        for i in self.pvp_in_hand:
+            print(f"{self.pvp_in_hand.index(i)} - |{i.type}|")
