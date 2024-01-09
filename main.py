@@ -76,8 +76,8 @@ def boy_attribute_table():   #this is an automated notepad of the clues you have
             if x.clue_to_reveal == i.clothing: clothing = red_out(i.clothing)   #if any of the clues collected fit in the category, it gets redded out
         if i.sport == None: sport = ""
         if i.food == None: food = ""   #removing null entries for food sport weirdness
-        notepad.add_row([name,hangout, sport+food, clothing, listname])   #adds rows qeued up for printing
-    notepad.align="l"   #aligns the table to the left
+        notepad.add_row([name, hangout, sport+food, clothing, listname])   #adds rows qeued up for printing
+    notepad.align = "l"   #aligns the table to the left
     clear_screen()
     print(notepad)  #prints notepad
     input("Press Enter to continue...")
@@ -470,7 +470,7 @@ def count():
     print(f"Discard Pile: {len(discard_pile)}")
     short_delay()
 
-def solve(crush, number_of_players):
+def solve(crush, number_of_players) -> bool:
 
     if current_player.guessed_this_turn:
         print("You cannot guess more than once per turn.")
